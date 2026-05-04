@@ -15,6 +15,8 @@ spec:
     helm:
       values: |
         featureGates: "PlayerTracking=true"
+        agones:
+          featureGates: "PlayerTracking=true"
         controller:
           nodeSelector:
             node-type: infra
