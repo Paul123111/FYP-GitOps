@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agones-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    chart: agones
+    repoURL: https://agones.dev/chart/stable
+    targetRevision: 1.5.7
+    helm:
+      values: |
+        agones:
+          featureGates: "PlayerTracking=true"
+          controller:
+            nodeSelector:
+              node-type: infra
+          allocator:
+            nodeSelector:
+              node-type: infra
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: agones-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
