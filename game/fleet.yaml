@@ -13,10 +13,10 @@ spec:
         - name: default
           portPolicy: Dynamic
           containerPort: 7777
+      players:
+        initialCapacity: 4
       template:
         spec:
-          players:
-            initialCapacity: 4
           nodeSelector:
             node-type: workers
           containers:
