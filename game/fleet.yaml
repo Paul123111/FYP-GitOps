@@ -19,10 +19,11 @@ spec:
             node-type: workers
           containers:
             - name: unity-simple-server
-              image: AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.4
+              # image: AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.4
+              image: 192.168.1.18:5000/planet-hunter-server:0.4
               imagePullPolicy: IfNotPresent
-          imagePullSecrets:
-            - name: ecr-creds
+          # imagePullSecrets:
+          #   - name: ecr-creds
           resources:
             requests:
               memory: 128Mi
