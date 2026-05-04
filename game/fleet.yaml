@@ -1,7 +1,7 @@
 apiVersion: agones.dev/v1
 kind: Fleet
 metadata:
-  generateName: planet-hunter-fleet-
+  name: planet-hunter-fleet
 spec:
   replicas: 3
   template:
