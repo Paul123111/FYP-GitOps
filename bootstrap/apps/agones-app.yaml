@@ -21,20 +21,20 @@ spec:
             resources:
               requests:
                 ephemeral-storage: "500Mi"
+            nodeSelector:
+              node-type: infra
           extensions:
             resources:
               requests:
                 ephemeral-storage: "500Mi"
+            nodeSelector:
+              node-type: infra
           allocator:
             resources:
               requests:
                 ephemeral-storage: "500Mi"
-        controller:
-          nodeSelector:
-            node-type: infra
-        allocator:
-          nodeSelector:
-            node-type: infra
+            nodeSelector:
+              node-type: infra
   destination:
     server: "https://kubernetes.default.svc"
     namespace: agones-system
