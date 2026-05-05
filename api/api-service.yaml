@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: server-api-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server-api-sa
+  namespace: server-api-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-api-service
+  namespace: server-api-system
+spec:
+  selector:
+    app: server-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      nodePort: 30001
+  type: NodePort
