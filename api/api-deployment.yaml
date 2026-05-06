@@ -19,7 +19,7 @@ spec:
         node-type: infra
       containers:
       - name: api
-        image: 192.168.1.17:5000/planet-hunter-api:0.1
+        image: 192.168.1.17:5000/planet-hunter-api:0.2
         ports:
         - containerPort: 8080
         env:
