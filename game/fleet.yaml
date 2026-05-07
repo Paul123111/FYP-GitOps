@@ -1,9 +1,10 @@
+---
 apiVersion: agones.dev/v1
 kind: Fleet
 metadata:
   name: planet-hunter-fleet
 spec:
-  replicas: 3
+  replicas: 2
   template:
     spec:
       health:
@@ -28,9 +29,9 @@ spec:
           #   - name: ecr-creds
           resources:
             requests:
-              memory: 128Mi
-              cpu: 128m
+              memory: 200Mi
+              cpu: 30m
             limits:
-              memory: 256Mi
-              cpu: 128m
+              memory: 300Mi
+              cpu: 100m
 

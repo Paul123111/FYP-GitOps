@@ -1,0 +1,13 @@
+---
+apiVersion: autoscaling.agones.dev/v1
+kind: FleetAutoscaler
+metadata:
+  name: planet-hunter-fleet-autoscaler
+spec:
+  fleetName: planet-hunter-fleet
+  policy:
+    type: Buffer
+    buffer:
+      bufferSize: 2
+      minReplicas: 3
+      maxReplicas: 10
