@@ -7,29 +7,31 @@ spec:
   replicas: 2
   template:
     spec:
-      health:
-        initialDelaySeconds: 120
-        periodSeconds: 10
-      ports:
-        - name: default
-          portPolicy: Dynamic
-          containerPort: 7777
-      players:
-        initialCapacity: 4
-      nodeSelector:
-        node-type: workers
-      containers:
-        - name: unity-simple-server
-          # image: AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.4
-          image: 192.168.1.17:5000/planet-hunter-server:0.6
-          imagePullPolicy: IfNotPresent
-          # imagePullSecrets:
-          #   - name: ecr-creds
-          resources:
-            requests:
-              memory: 200Mi
-              cpu: 30m
-            limits:
-              memory: 300Mi
-              cpu: 100m
+      template:
+        spec:
+          health:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          ports:
+            - name: default
+              portPolicy: Dynamic
+              containerPort: 7777
+          players:
+            initialCapacity: 4
+          nodeSelector:
+            node-type: workers
+          containers:
+            - name: unity-simple-server
+              # image: AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.4
+              image: 192.168.1.17:5000/planet-hunter-server:0.6
+              imagePullPolicy: IfNotPresent
+              # imagePullSecrets:
+              #   - name: ecr-creds
+              resources:
+                requests:
+                  memory: 200Mi
+                  cpu: 30m
+                limits:
+                  memory: 300Mi
+                  cpu: 100m
 
