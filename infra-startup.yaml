@@ -1,0 +1,26 @@
+#cloud-config
+write_files:
+  - path: /tmp/setup.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      
+      # allocate 2GB swapfile for stability
+      fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+      echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+      # install k3s
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      echo "Waiting for K3s..."
+      until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+
+      # install argocd
+      kubectl create namespace argocd
+      kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.9.9/manifests/install.yaml
+
+      echo "Cloud-init finished at $(date)"
+
+runcmd:
+  - bash /tmp/setup.sh
+
