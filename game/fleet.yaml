@@ -10,7 +10,7 @@ spec:
       template:
         spec:
           health:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 10
           ports:
             - name: default
