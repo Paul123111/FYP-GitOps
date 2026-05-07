@@ -7,17 +7,17 @@ spec:
   replicas: 2
   template:
     spec:
+      health:
+        initialDelaySeconds: 120
+        periodSeconds: 10
+      ports:
+        - name: default
+          portPolicy: Dynamic
+          containerPort: 7777
+      players:
+        initialCapacity: 4
       template:
         spec:
-          health:
-            initialDelaySeconds: 120
-            periodSeconds: 10
-          ports:
-            - name: default
-              portPolicy: Dynamic
-              containerPort: 7777
-          players:
-            initialCapacity: 4
           nodeSelector:
             node-type: workers
           containers:
