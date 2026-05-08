@@ -7,7 +7,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Paul123111/FYP-Gitops
+    repoURL: https://github.com/Paul123111/FYP-Gitops.git
     targetRevision: HEAD
     path: bootstrap/apps
   destination:
