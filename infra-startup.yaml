@@ -3,11 +3,14 @@ package_update: true
 packages:
   - git
   - curl
+  - unzip
 write_files:
   - path: /tmp/setup.sh
     permissions: '0755'
     content: |
       #!/bin/bash
+      
+      apt-get update
       
       ################
       # allocate 2GB swapfile for stability
@@ -33,6 +36,17 @@ write_files:
       kubectl create namespace argocd
       kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.9/manifests/install.yaml
       
+      ################
+      echo "Installing AWS CLI..."
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      unzip awscliv2.zip
+      ./aws/install
+      rm -rf awscliv2.zip awsi
+
+      # test token
+      TEST_TOKEN=$(aws ssm get-parameter --name "/github/test-token" --with-decryption --query "Parameter.Value" --output text)
+      echo $TEST_TOKEN
+
       ################
       echo "Cloud-init finished at $(date)"
 
