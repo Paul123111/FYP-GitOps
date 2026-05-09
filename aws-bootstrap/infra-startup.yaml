@@ -10,15 +10,24 @@ write_files:
     content: |
       #!/bin/bash
 
-      set -eux
+      set -x
+
+      # for argocd
+      export HOME=/root
       
-      apt-get update
-      
+
       ################
       # allocate 2GB swapfile for stability
       echo "Allocating swapfile..."
       fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
       echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      
+      ################
+      echo "Installing AWS CLI..."
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      unzip awscliv2.zip
+      ./aws/install
+      rm -rf awscliv2.zip aws
 
       ################
       echo "Installing ArgoCD CLI..."
@@ -29,9 +38,11 @@ write_files:
       ################
       set +x
       echo "Installing k3s..."
-      K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" K3S_TOKEN="$K3S_TOKEN" sh -
+      NODE_NAME="$(hostname)"
+      export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -s - agent --node-name="$NODE_NAME" --node-label="node-role.kubernetes.io/infra=true"
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      unset K3S_TOKEN
       set -x
       
       echo "Waiting for K3s..."
@@ -42,29 +53,45 @@ write_files:
       kubectl create namespace argocd
       kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.9/manifests/install.yaml
       
-      ################
-      echo "Installing AWS CLI..."
-      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      unzip awscliv2.zip
-      ./aws/install
-      rm -rf awscliv2.zip aws
+      echo "Waiting for Argo CD CRDs..."
+      kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io
 
+      # echo "Waiting for Argo CD Server deployment..."
+      # kubectl wait --namespace argocd \
+      #   --for=condition=available \
+      #   --timeout=300s \
+      #   deployment/argocd-server
+      
       ################
       set +x
       GITHUB_TOKEN=$(aws ssm get-parameter --name "/github/fyp-token" --with-decryption --query "Parameter.Value" --output text)
       echo "Downloading root-app.yaml from repo..."
-      curl -H "Authorization: token $GITHUB_TOKEN" \
-        -H "Accept: application/vnd.github.v3.raw" \
-        -L "https://github.com/Paul123111/FYP-GitOps/bootstrap/root-app.yaml" \
+      curl -L -H "Accept: application/vnd.github.v3.raw" \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "X-GitHub-Api-Version: 2026-03-10" \
+        https://api.github.com/repos/Paul123111/FYP-GitOps/contents/bootstrap/root-app.yaml \
         -o /tmp/root-app.yaml
+      
+      cat <<EOF | kubectl apply -f -
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: fyp-repo-creds
+        namespace: argocd
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      stringData:
+        type: git
+        url: https://github.com/Paul123111/FYP-GitOps.git
+        username: Paul123111
+        password: $GITHUB_TOKEN
+      EOF
       unset GITHUB_TOKEN
+
       set -x
 
       echo "Deploying root-app in ArgoCD..."
       kubectl apply -f /tmp/root-app.yaml
-
-      ################
-      echo "Cloud-init finished at $(date)"
 
 runcmd:
   - bash /tmp/setup.sh
