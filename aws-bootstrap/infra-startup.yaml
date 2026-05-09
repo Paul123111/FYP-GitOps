@@ -9,6 +9,8 @@ write_files:
     permissions: '0755'
     content: |
       #!/bin/bash
+
+      set -eux
       
       apt-get update
       
@@ -25,9 +27,13 @@ write_files:
       chmod +x /usr/local/bin/argocd
 
       ################
+      set +x
       echo "Installing k3s..."
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -
+      K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" K3S_TOKEN="$K3S_TOKEN" sh -
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      set -x
+      
       echo "Waiting for K3s..."
       until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
 
@@ -41,11 +47,21 @@ write_files:
       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
       unzip awscliv2.zip
       ./aws/install
-      rm -rf awscliv2.zip awsi
+      rm -rf awscliv2.zip aws
 
-      # test token
-      TEST_TOKEN=$(aws ssm get-parameter --name "/github/test-token" --with-decryption --query "Parameter.Value" --output text)
-      echo $TEST_TOKEN
+      ################
+      set +x
+      GITHUB_TOKEN=$(aws ssm get-parameter --name "/github/fyp-token" --with-decryption --query "Parameter.Value" --output text)
+      echo "Downloading root-app.yaml from repo..."
+      curl -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Accept: application/vnd.github.v3.raw" \
+        -L "https://github.com/Paul123111/FYP-GitOps/bootstrap/root-app.yaml" \
+        -o /tmp/root-app.yaml
+      unset GITHUB_TOKEN
+      set -x
+
+      echo "Deploying root-app in ArgoCD..."
+      kubectl apply -f /tmp/root-app.yaml
 
       ################
       echo "Cloud-init finished at $(date)"
