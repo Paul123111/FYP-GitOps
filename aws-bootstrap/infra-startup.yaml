@@ -71,6 +71,10 @@ write_files:
         -H "X-GitHub-Api-Version: 2026-03-10" \
         https://api.github.com/repos/Paul123111/FYP-GitOps/contents/bootstrap/root-app.yaml \
         -o /tmp/root-app.yaml
+
+      # swapping out awsId in root-app for AWS Account ID
+      AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+      sed -i "s/123456789012/$AWS_ACCOUNT_ID/g" /tmp/root-app.yaml
       
       cat <<EOF | kubectl apply -f -
       apiVersion: v1
