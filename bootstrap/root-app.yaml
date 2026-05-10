@@ -7,18 +7,18 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Paul123111/FYP-Gitops.git
+    repoURL: https://github.com/Paul123111/FYP-GitOps.git
     targetRevision: HEAD
     path: bootstrap/apps
+    helm:
+      parameters:
+        - name: "fleet-app.awsId"
+          value: "123456789012"
+        - name: "api-app.awsId"
+          value: "123456789012"
   destination:
     server: "https://kubernetes.default.svc"
     namespace: argocd
-  helm:
-    parameters:
-      - name: "fleet-app.awsId"
-        value: "123456789012"
-      - name: "api-app.awsId"
-        value: "123456789012"
   syncPolicy:
     automated:
       prune: true
