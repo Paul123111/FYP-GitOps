@@ -15,7 +15,7 @@ spec:
     helm:
       parameters:
         - name: "awsId"
-          value: "placeholder"
+          value: {{ .Values.awsId | quote }}
   destination:
     server: "https://kubernetes.default.svc"
     namespace: default
