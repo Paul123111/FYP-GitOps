@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Paul123111/FYP-GitOps.git
-    targetRevision: HEAD
+    targetRevision: main
     path: bootstrap/apps
     helm:
       parameters:
