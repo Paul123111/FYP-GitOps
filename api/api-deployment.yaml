@@ -4,6 +4,8 @@ kind: Deployment
 metadata:
   name: server-api
   namespace: server-api-system
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: AWS_ACCOUNT_ID=123456789012
 spec:
   replicas: 2
   selector:

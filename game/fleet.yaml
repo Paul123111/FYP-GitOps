@@ -3,6 +3,8 @@ apiVersion: agones.dev/v1
 kind: Fleet
 metadata:
   name: planet-hunter-fleet
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: AWS_ACCOUNT_ID=123456789012
 spec:
   replicas: 3
   template:
