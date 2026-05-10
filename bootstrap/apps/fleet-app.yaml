@@ -12,6 +12,10 @@ spec:
     repoURL: https://github.com/Paul123111/FYP-Gitops.git
     targetRevision: HEAD
     path: game
+    helm:
+      parameters:
+        - name: "awsId"
+          value: "placeholder"
   destination:
     server: "https://kubernetes.default.svc"
     namespace: default

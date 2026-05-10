@@ -13,6 +13,12 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: argocd
+  helm:
+    parameters:
+      - name: "fleet-app.awsId"
+        value: "123456789012"
+      - name: "api-app.awsId"
+        value: "123456789012"
   syncPolicy:
     automated:
       prune: true
