@@ -15,7 +15,6 @@ write_files:
       # for argocd
       export HOME=/root
       
-
       ################
       # allocate 2GB swapfile for stability
       echo "Allocating swapfile..."
@@ -38,9 +37,13 @@ write_files:
       ################
       set +x
       echo "Installing k3s..."
-      NODE_NAME="$(hostname)"
+      NODE_NAME="$(hostname)-infra"
       export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -s - agent --node-name="$NODE_NAME" --node-label="node-role.kubernetes.io/infra=true"
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --disable traefik" sh -s - \
+        --node-name="$NODE_NAME" \
+        --node-label="node-role.kubernetes.io/infra=true"
+        --node-label "node-type=infra"
+        
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
       unset K3S_TOKEN
       set -x

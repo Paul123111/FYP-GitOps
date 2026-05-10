@@ -1,0 +1,48 @@
+#cloud-config
+package_update: true
+packages:
+  - git
+  - curl
+  - unzip
+write_files:
+  - path: /tmp/setup.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+
+      set -x
+      
+      ################
+      echo "Installing AWS CLI..."
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      unzip awscliv2.zip
+      ./aws/install
+      rm -rf awscliv2.zip aws
+
+      ################
+      set +x
+      echo "Installing k3s..."
+      
+      NODE_NAME="$(hostname)-worker"
+      export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
+
+      MASTER_IP=$(aws ec2 describe-instances \
+      --filters "Name=tag:Role,Values=infra" "Name=instance-state-name,Values=running" \
+      --query "Reservations[*].Instances[*].PrivateIpAddress" \
+      --output text)
+
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --disable traefik" sh -s - \
+        --node-name="$NODE_NAME" \
+        --node-label="node-role.kubernetes.io/workers=true"
+        --node-label "node-type=workers" \
+        --url "https://${MASTER_IP}:6443"
+
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      unset K3S_TOKEN
+      set -x
+      
+      echo "Waiting for K3s..."
+      until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+
+runcmd:
+  - bash /tmp/setup.sh
