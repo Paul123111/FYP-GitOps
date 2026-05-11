@@ -4,6 +4,10 @@ packages:
   - git
   - curl
   - unzip
+users:
+  - default
+  - name: ubuntu
+    groups: [docker]
 write_files:
   - path: /tmp/setup.sh
     permissions: '0755'
@@ -34,22 +38,72 @@ write_files:
       curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v3.3.9/argocd-linux-amd64
       chmod +x /usr/local/bin/argocd
 
+
+      ################
+      set +x
+      export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+      set -x
+
+      sudo mkdir -p /etc/kubernetes
+      sudo tee /etc/kubernetes/ecr-credential-provider.json > /dev/null <<EOF
+      {
+        "providers": [
+          {
+            "name": "ecr-credential-provider",
+            "matchImages": [
+              "*.dkr.ecr.*.amazonaws.com",
+              "*.dkr.ecr.*.amazonaws.com.cn"
+            ],
+            "apiVersion": "credentialprovider.kubelet.k8s.io/v1",
+            "defaultCacheDuration": "12h"
+          }
+        ]
+      }
+      EOF
+
+      apt-get update 
+      apt-get install -y amazon-ecr-credential-helper
+      # curl https://releases.rancher.com/install-docker/24.0.4.sh | sh
+
+      mkdir -p ~/.docker/
+      cat > ~/.docker/config.json <<EOF
+      {
+        "credHelpers": {
+          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
+          "public.ecr.aws": "ecr-login"
+        }
+      }
+      EOF
+      cat > /root/.docker/config.json <<EOF
+      {
+        "credHelpers": {
+          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
+          "public.ecr.aws": "ecr-login"
+        }
+      }
+      EOF
+
       ################
       set +x
       echo "Installing k3s..."
       NODE_NAME="$(hostname)-infra"
       export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --disable traefik" sh -s - \
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server" sh -s - \
+        --disable traefik \
         --node-name="$NODE_NAME" \
-        --node-label="node-role.kubernetes.io/infra=true"
-        --node-label "node-type=infra"
-        
+        --docker
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
       unset K3S_TOKEN
       set -x
       
       echo "Waiting for K3s..."
-      until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+      until kubectl get node "$NODE_NAME" &>/dev/null; do
+        echo "Node $NODE_NAME not found yet. Retrying in 5s..."
+        sleep 5
+      done
+      kubectl label node "$NODE_NAME" node-role.kubernetes.io/infra=true
+      kubectl label node "$NODE_NAME" node-type=infra
+
 
       ################
       echo "Installing ArgoCD..."
@@ -76,7 +130,6 @@ write_files:
         -o /tmp/root-app.yaml
 
       # swapping out awsId in root-app for AWS Account ID
-      AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
       sed -i "s/123456789012/$AWS_ACCOUNT_ID/g" /tmp/root-app.yaml
       
       cat <<EOF | kubectl apply -f -
@@ -94,7 +147,7 @@ write_files:
         password: $GITHUB_TOKEN
       EOF
       unset GITHUB_TOKEN
-
+      unset AWS_ACCOUNT_ID
       set -x
 
       echo "Deploying root-app in ArgoCD..."

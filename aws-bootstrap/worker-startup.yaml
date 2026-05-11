@@ -4,6 +4,10 @@ packages:
   - git
   - curl
   - unzip
+users:
+  - default
+  - name: ubuntu
+    groups: [docker]
 write_files:
   - path: /tmp/setup.sh
     permissions: '0755'
@@ -21,28 +25,85 @@ write_files:
 
       ################
       set +x
+      export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+      set -x
+
+      sudo mkdir -p /etc/kubernetes
+      sudo tee /etc/kubernetes/ecr-credential-provider.json > /dev/null <<EOF
+      {
+        "providers": [
+          {
+            "name": "ecr-credential-provider",
+            "matchImages": [
+              "*.dkr.ecr.*.amazonaws.com",
+              "*.dkr.ecr.*.amazonaws.com.cn"
+            ],
+            "apiVersion": "credentialprovider.kubelet.k8s.io/v1",
+            "defaultCacheDuration": "12h"
+          }
+        ]
+      }
+      EOF
+
+      apt-get update 
+      apt-get install -y amazon-ecr-credential-helper
+      # curl https://releases.rancher.com/install-docker/24.0.4.sh | sh
+
+      mkdir -p ~/.docker/
+      cat > ~/.docker/config.json <<EOF
+      {
+        "credHelpers": {
+          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
+          "public.ecr.aws": "ecr-login"
+        }
+      }
+      EOF
+      cat > /root/.docker/config.json <<EOF
+      {
+        "credHelpers": {
+          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
+          "public.ecr.aws": "ecr-login"
+        }
+      }
+      EOF
+
+      ################
+      set +x
       echo "Installing k3s..."
-      
       NODE_NAME="$(hostname)-worker"
       export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
 
+
       MASTER_IP=$(aws ec2 describe-instances \
-      --filters "Name=tag:Role,Values=infra" "Name=instance-state-name,Values=running" \
-      --query "Reservations[*].Instances[*].PrivateIpAddress" \
-      --output text)
+        --filters "Name=tag:Name,Values=infra-node" "Name=instance-state-name,Values=running" \
+        --query "Reservations[*].Instances[*].PrivateIpAddress" \
+        --output text)
 
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --disable traefik" sh -s - \
+      echo "$MASTER_IP"
+      if [[ -z "$MASTER_IP" ]]; then
+        echo "Error: infra-node not found"
+        exit 1
+      fi
+
+
+      curl -sfL https://get.k3s.io | K3S_URL="https://${MASTER_IP}:6443" INSTALL_K3S_EXEC="agent" sh -s - \
         --node-name="$NODE_NAME" \
-        --node-label="node-role.kubernetes.io/workers=true"
-        --node-label "node-type=workers" \
-        --url "https://${MASTER_IP}:6443"
-
+        --docker \
+        --node-label="node-type=workers"
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
       unset K3S_TOKEN
       set -x
       
       echo "Waiting for K3s..."
-      until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+      until kubectl get node "$NODE_NAME" &>/dev/null; do
+        echo "Node $NODE_NAME not found yet. Retrying in 5s..."
+        sleep 5
+      done
+      # kubectl label node "$NODE_NAME" node-role.kubernetes.io/workers=true
+      # kubectl label node "$NODE_NAME" node-type=workers
+
+      set -x
 
 runcmd:
   - bash /tmp/setup.sh
+
