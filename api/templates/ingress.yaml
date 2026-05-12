@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: server-api-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-cert"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+  - hosts:
+    - ://api.planethunter.uk  # Replace this
+    secretName: game-api-tls
+  rules:
+  - host: ://api.planethunter.uk
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: server-api-service
+            port:
+              number: 80             # The port your app listens on internally

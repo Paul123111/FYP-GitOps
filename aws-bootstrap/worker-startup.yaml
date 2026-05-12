@@ -27,52 +27,35 @@ write_files:
       set +x
       export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
       set -x
-
-      sudo mkdir -p /etc/kubernetes
-      sudo tee /etc/kubernetes/ecr-credential-provider.json > /dev/null <<EOF
-      {
-        "providers": [
-          {
-            "name": "ecr-credential-provider",
-            "matchImages": [
-              "*.dkr.ecr.*.amazonaws.com",
-              "*.dkr.ecr.*.amazonaws.com.cn"
-            ],
-            "apiVersion": "credentialprovider.kubelet.k8s.io/v1",
-            "defaultCacheDuration": "12h"
-          }
-        ]
-      }
+      
+      mkdir -p /var/lib/rancher/k3s/agent/etc
+      cat > /var/lib/rancher/k3s/agent/etc/ecr-config.yaml <<EOF
+      apiVersion: kubelet.config.k8s.io/v1
+      kind: CredentialProviderConfig
+      providers:
+        - name: ecr-credential-provider
+          matchImages:
+            - "*.dkr.ecr.eu-west-1.amazonaws.com"
+          defaultCacheDuration: "12h"
+          apiVersion: credentialprovider.kubelet.k8s.io/v1
       EOF
 
       apt-get update 
       apt-get install -y amazon-ecr-credential-helper
-      # curl https://releases.rancher.com/install-docker/24.0.4.sh | sh
 
-      mkdir -p ~/.docker/
-      cat > ~/.docker/config.json <<EOF
-      {
-        "credHelpers": {
-          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
-          "public.ecr.aws": "ecr-login"
-        }
-      }
-      EOF
-      cat > /root/.docker/config.json <<EOF
-      {
-        "credHelpers": {
-          "$AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com": "ecr-login",
-          "public.ecr.aws": "ecr-login"
-        }
-      }
-      EOF
+      mkdir -p /usr/local/bin/kubelet-plugins/
+
+      curl -Lo /usr/local/bin/kubelet-plugins/ecr-credential-provider \
+        https://github.com/dntosas/ecr-credential-provider/releases/download/v1.2.0/ecr-credential-provider-linux-amd64
+      chmod +x /usr/local/bin/kubelet-plugins/ecr-credential-provider
+      chmod 755 /usr/local/bin/kubelet-plugins
 
       ################
-      set +x
       echo "Installing k3s..."
       NODE_NAME="$(hostname)-worker"
+      # RAW_SSM_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
+      # export K3S_TOKEN="$(echo "$RAW_SSM_TOKEN" | tr -d '[:space:]')"
       export K3S_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"
-
 
       MASTER_IP=$(aws ec2 describe-instances \
         --filters "Name=tag:Name,Values=infra-node" "Name=instance-state-name,Values=running" \
@@ -92,8 +75,11 @@ write_files:
         --node-name="$NODE_NAME" \
         --docker \
         --node-label="node-type=workers" \
-        --node-external-ip="$PUBLIC_IP"
+        --node-external-ip="$PUBLIC_IP" \
+        --kubelet-arg="image-credential-provider-bin-dir=/usr/local/bin/kubelet-plugins" \
+        --kubelet-arg="image-credential-provider-config=/var/lib/rancher/k3s/agent/etc/ecr-config.yaml"
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
       unset K3S_TOKEN
       set -x
       
