@@ -7,6 +7,10 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
+    persistence:
+      enabled: true
+      path: /var/lib/rancher/k3s/storage/traefik
+      size: 128Mi
     additionalArguments:
       - "--log.level=DEBUG"
       - "--certificatesresolvers.letsencrypt.acme.email=example@test.com"
@@ -21,9 +25,9 @@ spec:
         valueFrom:
           secretKeyRef:
             name: cloudflare-api-token-secret
-            key api-token
+            key: api-token
       - name: CF_ZONE_API_TOKEN
         valueFrom:
           secretKeyRef:
             name: cloudflare-api-token-secret
-            key api-token
+            key: api-token
