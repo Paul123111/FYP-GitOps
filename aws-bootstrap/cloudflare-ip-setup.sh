@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Get your Security Group ID
-SG_ID="sg-0c2082b242c5082b5"
+SG_ID="sg-xxxxxxxxxxxx"
 
 # Fetch Cloudflare IPs and add them to the Security Group
 for ip in $(curl -s https://www.cloudflare.com/ips-v4); do
