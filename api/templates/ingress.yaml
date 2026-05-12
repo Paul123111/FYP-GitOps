@@ -5,10 +5,12 @@ metadata:
   name: server-api-ingress
   namespace: server-api-system
   annotations:
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
+  tls:
+  - hosts:
+    - api.planethunter-game.uk
+    secretName: cloudflare-origin-cert
   rules:
   - host: api.planethunter-game.uk
     http:

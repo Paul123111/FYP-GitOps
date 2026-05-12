@@ -20,11 +20,15 @@ write_files:
       export HOME=/root
       
       ################
+      # Swapfile
+      ################
       # allocate 2GB swapfile for stability
       echo "Allocating swapfile..."
       fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
       echo '/swapfile none swap sw 0 0' >> /etc/fstab
-      
+
+      ################
+      # AWS CLI
       ################
       echo "Installing AWS CLI..."
       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -33,12 +37,15 @@ write_files:
       rm -rf awscliv2.zip aws
 
       ################
+      # ArgoCD CLI
+      ################
       echo "Installing ArgoCD CLI..."
       mkdir -p /usr/local/bin
       curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v3.3.9/argocd-linux-amd64
       chmod +x /usr/local/bin/argocd
 
-
+      ################
+      # Credentials
       ################
       set +x
       export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
@@ -68,6 +75,8 @@ write_files:
       chmod 755 /usr/local/bin/kubelet-plugins
 
       ################
+      # K3s Install
+      ################
       set +x
       echo "Installing k3s..."
       NODE_NAME="$(hostname)-infra"
@@ -89,11 +98,34 @@ write_files:
       kubectl label node "$NODE_NAME" node-role.kubernetes.io/infra=true
       kubectl label node "$NODE_NAME" node-type=infra
       
+      ################
+      # Secrets
+      ################
       set +x
       SSM_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token | tr -d '\n' | tr -d '\r')
       aws ssm put-parameter --name "/k3s/fyp-token" --value "$SSM_TOKEN" --type "SecureString" --overwrite
+
+      CRT_VAL=$(aws ssm get-parameter --name "/k3s/cloudflare-cert" --with-decryption --query "Parameter.Value" --output text | base64 -w 0)
+      KEY_VAL=$(aws ssm get-parameter --name "/k3s/cloudflare-cert-key" --with-decryption --query "Parameter.Value" --output text | base64 -w 0)
+
+      kubectl apply -f - <<EOF
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: cloudflare-origin-cert
+        namespace: server-api-system
+      type: kubernetes.io/tls
+      data:
+        tls.crt: $CRT_VAL
+        tls.key: $KEY_VAL
+      EOF
+
+      unset CRT_VAL KEY_VAL
       set -x
 
+      ################
+      # ArgoCD
       ################
       echo "Installing ArgoCD..."
       kubectl create namespace argocd
@@ -102,6 +134,8 @@ write_files:
       echo "Waiting for Argo CD CRDs..."
       kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io
       
+      ################
+      # Get repo
       ################
       set +x
       GITHUB_TOKEN=$(aws ssm get-parameter --name "/github/fyp-token" --with-decryption --query "Parameter.Value" --output text)
