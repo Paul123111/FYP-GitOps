@@ -51,6 +51,7 @@ write_files:
       chmod 755 /usr/local/bin/kubelet-plugins
 
       ################
+      set +x
       echo "Installing k3s..."
       NODE_NAME="$(hostname)-worker"
       # RAW_SSM_TOKEN="$(aws ssm get-parameter --name "/k3s/fyp-token" --with-decryption --query "Parameter.Value" --output text)"

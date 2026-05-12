@@ -73,7 +73,6 @@ write_files:
       NODE_NAME="$(hostname)-infra"
       MY_TOKEN="60R5y7KCXwly7a/eWYyH1sMQcL2elvquVJrGLzJ+gI2482rwgjn8ifQGeJloxjVy"
       curl -sfL https://get.k3s.io | K3S_TOKEN="$MY_TOKEN" INSTALL_K3S_EXEC="server" sh -s - \
-        --disable traefik \
         --node-name="$NODE_NAME" \
         --docker \
         --kubelet-arg="image-credential-provider-bin-dir=/usr/local/bin/kubelet-plugins" \
