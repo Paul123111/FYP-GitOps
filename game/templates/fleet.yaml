@@ -6,6 +6,8 @@ metadata:
 spec:
   replicas: 3
   template:
+    metadata:
+      generateName: "room-"
     spec:
       health:
         initialDelaySeconds: 120
