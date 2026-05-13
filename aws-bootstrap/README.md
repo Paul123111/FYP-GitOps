@@ -1,5 +1,7 @@
 # AWS-Bootstrap
 
+## Setup Scripts
+
 This directory sets up a master node, and two worker nodes as EC2 instances on AWS
 
 A secret K3s token will need to be set up to connect the worker nodes to the

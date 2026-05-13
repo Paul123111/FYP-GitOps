@@ -82,17 +82,6 @@ write_files:
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
       unset K3S_TOKEN
-      set -x
-      
-      echo "Waiting for K3s..."
-      until kubectl get node "$NODE_NAME" &>/dev/null; do
-        echo "Node $NODE_NAME not found yet. Retrying in 5s..."
-        sleep 5
-      done
-      # kubectl label node "$NODE_NAME" node-role.kubernetes.io/workers=true
-      # kubectl label node "$NODE_NAME" node-type=workers
-
-      set -x
 
 runcmd:
   - bash /tmp/setup.sh

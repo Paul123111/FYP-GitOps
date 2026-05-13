@@ -80,7 +80,8 @@ write_files:
       set +x
       echo "Installing k3s..."
       NODE_NAME="$(hostname)-infra"
-      MY_TOKEN="60R5y7KCXwly7a/eWYyH1sMQcL2elvquVJrGLzJ+gI2482rwgjn8ifQGeJloxjVy"
+      MY_TOKEN=$(openssl rand -base64 32)
+      sleep 5
       curl -sfL https://get.k3s.io | K3S_TOKEN="$MY_TOKEN" INSTALL_K3S_EXEC="server" sh -s - \
         --node-name="$NODE_NAME" \
         --docker \
@@ -109,6 +110,11 @@ write_files:
       KEY_VAL=$(aws ssm get-parameter --name "/k3s/cloudflare-cert-key" --with-decryption --query "Parameter.Value" --output text | base64 -w 0)
 
       kubectl apply -f - <<EOF
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: server-api-system
       ---
       apiVersion: v1
       kind: Secret
