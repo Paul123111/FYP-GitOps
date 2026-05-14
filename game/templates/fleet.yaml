@@ -15,8 +15,8 @@ spec:
           portPolicy: Dynamic
           containerPort: 7777
       lists:
-        - players:
-            capacity: 4
+        players:
+          capacity: 4
       template:
         spec:
           nodeSelector:
