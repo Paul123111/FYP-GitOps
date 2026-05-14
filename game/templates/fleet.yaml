@@ -14,15 +14,16 @@ spec:
         - name: default
           portPolicy: Dynamic
           containerPort: 7777
-      players:
-        initialCapacity: 4
+      lists:
+        - players:
+            capacity: 4
       template:
         spec:
           nodeSelector:
             node-type: workers
           containers:
             - name: unity-simple-server
-              image: {{ .Values.awsId }}.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.72
+              image: {{ .Values.awsId }}.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:0.8
               imagePullPolicy: IfNotPresent
               resources:
                 requests:
