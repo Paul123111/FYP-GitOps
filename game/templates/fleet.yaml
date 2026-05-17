@@ -13,8 +13,8 @@ spec:
         failureThreshold: 5
       ports:
         - name: default
-          portPolicy: Passthrough
-          protocol: UDP
+          portPolicy: Dynamic
+          containerPort: 7777
       lists:
         players:
           capacity: 4
@@ -24,7 +24,7 @@ spec:
             node-type: workers
           containers:
             - name: unity-simple-server
-              image: {{ .Values.awsId }}.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:1.26
+              image: {{ .Values.awsId }}.dkr.ecr.eu-west-1.amazonaws.com/planet-hunter-server:1.27
               imagePullPolicy: IfNotPresent
               resources:
                 requests:
