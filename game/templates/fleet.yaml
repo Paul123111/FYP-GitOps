@@ -9,7 +9,8 @@ spec:
     spec:
       health:
         initialDelaySeconds: 120
-        periodSeconds: 10
+        periodSeconds: 20
+        failureThreshold: 5
       ports:
         - name: default
           portPolicy: Dynamic
