@@ -30,3 +30,9 @@ aws ssm put-parameter `
     --overwrite
 ```
 
+## CloudFlare Setup
+
+### Add CloudFlare IPs to Infra Node Security Group
+
+The domain name uses a proxy
+
