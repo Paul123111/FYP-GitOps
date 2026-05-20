@@ -4,7 +4,6 @@ kind: Fleet
 metadata:
   name: planet-hunter-fleet
 spec:
-  replicas: 3
   template:
     spec:
       health:
