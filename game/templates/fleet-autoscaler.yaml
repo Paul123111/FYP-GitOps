@@ -10,4 +10,4 @@ spec:
     buffer:
       bufferSize: 6
       minReplicas: 12
-      maxReplicas: 24
+      maxReplicas: 48
